@@ -1,0 +1,26 @@
+[server]
+address = 0.0.0.0
+http_port = 8881
+ws_port = 8882
+
+[wallet]
+username = velesrpc
+password = YOUR_RPC_PASSWORD_HERE
+host = 127.0.0.1
+port = 25522
+
+[mysql]
+host = localhost
+port = 3306
+username = webapi
+password = YOUR_MYSQL_PASSWORD_HERE
+database = veles_mining_stats
+
+[ssl]
+#ssl_http_port = 8883
+ssl_ws_port = 8884
+ssl_cert_chain = bundle.pem
+ssl_cert_key = privkey.pem
+
+[mining_api]
+http_port = 8885

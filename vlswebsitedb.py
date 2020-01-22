@@ -34,7 +34,7 @@ class VelesWebsiteDB(object):
 
 	def __init__(self, host, port, username, password, database):
 		self.debug("Connecting to %s on %s" % (database, host))
-		self.engine = create_engine('mysql://%s:%s@%s:%i/%s' % (username, password, host, int(port), database))#, echo=True)
+		self.engine = create_engine('mysql+pymysql://%s:%s@%s:%i/%s' % (username, password, host, int(port), database))#, echo=True)
 		self.connect()
 
 	def connect(self):

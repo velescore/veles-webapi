@@ -5,6 +5,7 @@
 import argparse
 import copy
 import configparser
+import hashlib
 import json
 import os
 import pickle
@@ -402,16 +403,23 @@ class VelesWebsiteApiServer(object):
 				for client in snapshot:
 					try:
 						result += [{
-							'host': client.ws.remote_address[0], 
-							'port': client.ws.remote_address[1],
+							# Don't leak any information about clients, uncomment when admin session
+							# will be implemented.
+							#'host': client.ws.remote_address[0], 
+							#'port': client.ws.remote_address[1],
+							#'user-agent': client.user_agent,
 							'url': "%s%s" % (client.url_host, client.url_path),
 							'origin': client.origin,
-							'user-agent': client.user_agent
+							'sessionID': hashlib.md5(	# unique anonymous ID to represent current client connection
+								(str(client.ws.remote_address[0]) + ':' +
+								str(client.ws.remote_address[1]) + ':' +
+								client.user_agent).encode('utf-8')
+								).hexdigest(),
 							}]
 					except:
 						self.log_last_error()
 						pass
-								# apply filters, if any
+				# apply filters, if any
 				if "filter" in cmd:
 					result = FilterableDataset(result).apply_filters(cmd['filter'])
 					extra_attributes['filter'] = cmd['filter']

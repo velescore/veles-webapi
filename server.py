@@ -3,6 +3,7 @@ import vlswallet, vlsstats, vlsmarket, memcache, vlswebsitedb
 import asyncio, sys, json
 from aiohttp import web
 import websockets, pickle, time, traceback, random
+from websockets.exceptions import ConnectionClosed as WebsocketConnectionClosed
 import copy
 from datetime import datetime
 import configparser, argparse, os
@@ -312,22 +313,16 @@ class VelesWebsiteApiServer(object):
 			try:
 				payload = yield from websocket.recv()
 				self.log("\n<< %s" % payload)
-			except:
-				client_info = ''
-
-				if client.hostname:
-					client_into += ' Node: ' + client.hostname
-
-				if client.ws and 'remote_address' in client.ws:
-					client_info += ' Host:' + client.ws.remote_address[0]
-					client_port += ' Port:' + client.ws.remote_address[1]
-
-				self.log("Error while reading from client socket:" + client_info)
+			except WebsocketConnectionClosed:
 				break
+			except Exception as e:
+				self.log("Error while reading from client socket: " + str(e))
+				break
+
 			try:
 				yield from self.handle_command(client, payload)
-			except:
-				self.log("Error while handling command: %s" % payload)
+			except Exception as e:
+				self.log("Error while handling command %s: %s" % (payload, str(e)))
 				self.log_last_error()
 				continue
 

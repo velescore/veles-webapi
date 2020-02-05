@@ -1,14 +1,30 @@
 #!/usr/bin/python3.7
-import vlswallet, vlsstats, vlsmarket, memcache, vlswebsitedb
-import asyncio, sys, json
-from aiohttp import web
-import websockets, pickle, time, traceback, random
-from websockets.exceptions import ConnectionClosed as WebsocketConnectionClosed
+# Prototype of Websocket and HTTPS JSON API to receive events and query 
+# information from Veles Core blockchain.
+#
+import argparse
 import copy
+import configparser
+import json
+import os
+import pickle
+import random
+import sys
+import time
+import traceback
 from datetime import datetime
-import configparser, argparse, os
+
+import asyncio
+from aiohttp import web
 import requests
-import ssl, pathlib, socket
+import ssl
+import websockets
+
+import memcache
+import vlsmarket
+import vlsstats
+import vlswallet
+import vlswebsitedb
 
 class ConfigurationError(ValueError):
 	'''raise this when there's a critical error with the configuration file'''
@@ -313,7 +329,7 @@ class VelesWebsiteApiServer(object):
 			try:
 				payload = yield from websocket.recv()
 				self.log("\n<< %s" % payload)
-			except WebsocketConnectionClosed:
+			except websockets.exceptions.ConnectionClosed:
 				break
 			except Exception as e:
 				self.log("Error while reading from client socket: " + str(e))

@@ -659,28 +659,38 @@ class VelesWebsiteApiServer(object):
 					})
 				
 				# other chained events
-				pow_info = yield from self.cached_rpc_call('getmultialgostatus', ttl=self.pull_block_delay/2)
-				pow_info_filter = FilterableDataset(pow_info)
-				pow_state = {
-					'totalhashrate': pow_info_filter.apply_filters('sum=hashrate'),
-					'totaldifficulty': pow_info_filter.apply_filters('sum=difficulty'),
-					'multialgo': pow_info_filter.apply_filters('index=algo'),
-					#'diffs': pow_info_filter.apply_filters('index=algo|key=difficulty'),
-					#'height': chain_info['blocks']
-					}
-				yield from self.publish_event('state_changed', {
-					'entity-id': 'chain.pow',
-					'old-state': last_pow_state,
-					'new-state': pow_state
-					})
+				try:
+					pow_info = yield from self.cached_rpc_call('getmultialgostatus', ttl=self.pull_block_delay/2)
+					pow_info_filter = FilterableDataset(pow_info)
+					pow_state = {
+						'totalhashrate': pow_info_filter.apply_filters('sum=hashrate'),
+						'totaldifficulty': pow_info_filter.apply_filters('sum=difficulty'),
+						'multialgo': pow_info_filter.apply_filters('index=algo'),
+						#'diffs': pow_info_filter.apply_filters('index=algo|key=difficulty'),
+						#'height': chain_info['blocks']
+						}
+					yield from self.publish_event('state_changed', {
+						'entity-id': 'chain.pow',
+						'old-state': last_pow_state,
+						'new-state': pow_state
+						})
+				except Exception as e:
+					pow_state = None
+					print('Error obtaining multialgo status:', e)
+					pass
 
-				mining_state = self.statsdb.query_mining_stats(algo=None, total=True)
-				self.cache.set('miningstats_total', mining_state, 60)
-				yield from self.publish_event('state_changed', {
-					'entity-id': 'chain.stats.mining',
-					'old-state': last_mining_state,
-					'new-state': mining_state
-					})
+				try:
+					mining_state = self.statsdb.query_mining_stats(algo=None, total=True)
+					self.cache.set('miningstats_total', mining_state, 60)
+					yield from self.publish_event('state_changed', {
+						'entity-id': 'chain.stats.mining',
+						'old-state': last_mining_state,
+						'new-state': mining_state
+						})
+				except Exception as e:
+					mining_state = None
+					print('Error obtaining mining stats:', e)
+					pass
 
 				try:
 					halving_info = yield from self.cached_rpc_call('gethalvingstatus', ttl=self.pull_block_delay/2)
@@ -691,8 +701,9 @@ class VelesWebsiteApiServer(object):
 						'old-state': last_halving_state,
 						'new-state': halving_state
 						})
-				except:
+				except Exception as e:
 					halving_state = None
+					print('Error obtaining halving status:', e)
 					pass
 
 				last_chain_info = copy.copy(chain_info)
@@ -815,18 +826,18 @@ class VelesWebsiteApiServer(object):
 			ssl_context.load_cert_chain(self.config['ssl']['ssl_cert_chain'], self.config['ssl']['ssl_cert_key'])
 			print("Running VelesWebsiteApiServer SSL port at %s:%s" % (self.config['server']['address']	, str(self.config['ssl']['ssl_ws_port'])))
 
-			#try:			
-			loop.run_until_complete(asyncio.gather(
-				websockets.serve(self.handle_socket_task, self.config['server']['address'], self.config['server']['ws_port']),
-				websockets.serve(self.handle_socket_task, self.config['server']['address'], self.config['ssl']['ssl_ws_port'], ssl=ssl_context),
-				self.http_handler_task(),
-				self.pull_new_block_task(),
-				self.pull_masternodelist_task(),
-				self.pull_current_price_task(),
-				))
-			loop.run_forever()
-			#except KeyboardInterrupt:
-			#	print("\n* Shutting down on keyboard interrupt *")
+			try:			
+				loop.run_until_complete(asyncio.gather(
+					websockets.serve(self.handle_socket_task, self.config['server']['address'], self.config['server']['ws_port']),
+					websockets.serve(self.handle_socket_task, self.config['server']['address'], self.config['ssl']['ssl_ws_port'], ssl=ssl_context),
+					self.http_handler_task(),
+					self.pull_new_block_task(),
+					self.pull_masternodelist_task(),
+					self.pull_current_price_task(),
+					))
+				loop.run_forever()
+			except KeyboardInterrupt:
+				print("\n* Shutting down on keyboard interrupt *")
 			#except:
 			#	print("\n* Shutting down on error")
 		else:
@@ -843,8 +854,8 @@ class VelesWebsiteApiServer(object):
 				loop.run_forever()
 			except KeyboardInterrupt:
 				print("\n* Shutting down on keyboard interrupt *")
-			except:
-				print("\n* Shutting down on error")
+			#except:
+			#	print("\n* Shutting down on error")
 	
 	def log(self, msg):
 		print(msg)
